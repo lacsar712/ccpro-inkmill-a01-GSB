@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from app.models.grind_pass import GrindPass
+from app.models.ink_recipe_batch import InkRecipeBatch
 from app.models.mill import Mill
 from app.models.user import User
 from app.models.viscosity_sample import ViscositySample
@@ -63,4 +64,18 @@ def grind_pass_json(row: GrindPass) -> dict:
         "durationMin": _num(row.duration_min) or 0,
         "mediaType": row.media_type,
         "operatorName": row.operator_name,
+    }
+
+
+def ink_recipe_batch_json(row: InkRecipeBatch) -> dict:
+    return {
+        "id": row.id,
+        "workshopId": row.workshop_id,
+        "batchCode": row.batch_code,
+        "pigmentBase": row.pigment_base,
+        "targetViscosityPaS": _num(row.target_viscosity_pa_s) or 0,
+        "status": row.status,
+        "note": row.note,
+        "createdAt": dt_to_json(row.created_at),
+        "updatedAt": dt_to_json(row.updated_at),
     }

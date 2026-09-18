@@ -1,7 +1,7 @@
 # InkMill-01 · 油墨研磨台账
 
-面向印刷油墨研磨车间的**研磨机状态、粘度取样与研磨遍次**台账系统。  
-**不是**库存、电商或 CMS 场景。
+面向印刷油墨研磨车间的**色浆配方批次、研磨机状态、粘度取样与研磨遍次**台账系统。  
+**不是**库存、电商、通用配方库或 CMS 场景。
 
 ## 技术栈
 
@@ -31,10 +31,14 @@ MySQL 连接：`inkmill` / `inkmill` / `inkmill`（库名/用户/密码）
 ## 领域实体（JSON 驼峰）
 
 1. **Workshop**：`name`, `site`, `notes`
-2. **Mill**：`workshopId`, `millCode`（同车间唯一）, `pigmentBase`, `bowlLiters`, `status`（`grinding` \| `idle` \| `wash`）
-3. **ViscositySample**：`millId`, `sampledAt`, `viscosityPaS`（须 &gt; 0，否则 HTTP 400）, `tempC`, `notes`
-4. **GrindPass**：`millId`, `startedAt`, `passNo`（≥ 1）, `durationMin`（&gt; 0）, `mediaType`, `operatorName`
-5. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
+2. **InkRecipeBatch（色浆配方批次，挂 Workshop）**：`workshopId`, `batchCode`（同车间唯一）, `pigmentBase`, `targetViscosityPaS`（须 &gt; 0）, `status`（`draft` \| `mixing` \| `qc_pass` \| `scrap`）, `note`（可空）
+   - 状态机：`draft → mixing → qc_pass | scrap`；`qc_pass` / `scrap` 为终态。非法跳转、重复流转、终态再流转/编辑/删除均返回 **409**（中文消息）
+   - 流转走独立接口 `POST /api/ink-recipe-batches/{id}/transition`，body：`{"to": "mixing"}`
+   - 列表支持 `?workshopId=` 与 `?status=` 筛选
+3. **Mill**：`workshopId`, `millCode`（同车间唯一）, `pigmentBase`, `bowlLiters`, `status`（`grinding` \| `idle` \| `wash`）
+4. **ViscositySample**：`millId`, `sampledAt`, `viscosityPaS`（须 &gt; 0，否则 HTTP 400）, `tempC`, `notes`
+5. **GrindPass**：`millId`, `startedAt`, `passNo`（≥ 1）, `durationMin`（&gt; 0）, `mediaType`, `operatorName`
+6. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
 
 ## 快速启动（Docker）
 
@@ -100,8 +104,21 @@ InkMill-01/
 └── frontend/
     ├── Dockerfile
     ├── vite.config.ts
-    └── src/routes/           # Login / Dashboard / CRUD 页面
+    └── src/routes/           # Login / Dashboard / 车间 / 配方批次 / CRUD 页面
 ```
+
+## 配方批次接口一览
+
+| 方法 & 路径 | 说明 |
+|---|---|
+| `GET /api/ink-recipe-batches?workshopId=&status=` | 列表，可按车间、状态筛选 |
+| `POST /api/ink-recipe-batches` | 新建（初始状态固定 `draft`） |
+| `GET /api/ink-recipe-batches/{id}` | 详情 |
+| `PUT /api/ink-recipe-batches/{id}` | 编辑（终态批次 409） |
+| `DELETE /api/ink-recipe-batches/{id}` | 删除（终态批次 409） |
+| `POST /api/ink-recipe-batches/{id}/transition` | 状态流转，body `{"to":"mixing\|qc_pass\|scrap"}`；非法跳转 409 中文 |
+
+前端侧栏「配方批次」可做车间/状态筛选、查看详情并执行流转；车间列表每行提供「配方批次」入口，跳转时自动带上 `workshopId` 筛选。Seed 数据含 `draft` / `mixing` / `qc_pass` 各至少 1 条。
 
 ## UI 主题
 

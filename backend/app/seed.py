@@ -4,6 +4,7 @@ from decimal import Decimal
 from app.auth import hash_password
 from app.database import SessionLocal
 from app.models.grind_pass import GrindPass
+from app.models.ink_recipe_batch import InkRecipeBatch
 from app.models.mill import Mill
 from app.models.user import User
 from app.models.viscosity_sample import ViscositySample
@@ -105,6 +106,31 @@ def seed() -> None:
                         duration_min=Decimal("60.00"),
                         media_type="1.0mm 玻璃珠",
                         operator_name="李工",
+                    ),
+                    # 色浆配方批次：覆盖 draft / mixing / qc_pass 三种状态
+                    InkRecipeBatch(
+                        workshop_id=w1.id,
+                        batch_code="B-2026-001",
+                        pigment_base="酞菁蓝 P.B.15:3 色浆",
+                        target_viscosity_pa_s=Decimal("10.0000"),
+                        status="draft",
+                        note="待评审配方，尚未投料",
+                    ),
+                    InkRecipeBatch(
+                        workshop_id=w1.id,
+                        batch_code="B-2026-002",
+                        pigment_base="炭黑 P.Bk.7 色浆",
+                        target_viscosity_pa_s=Decimal("12.5000"),
+                        status="mixing",
+                        note="调合中，等待 QC 取样",
+                    ),
+                    InkRecipeBatch(
+                        workshop_id=w2.id,
+                        batch_code="B-2026-003",
+                        pigment_base="专色红 P.R.57:1 色浆",
+                        target_viscosity_pa_s=Decimal("8.8000"),
+                        status="qc_pass",
+                        note="粘度与色相均合格，可转入研磨",
                     ),
                 ]
             )

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
+  import { goBatches } from '../lib/nav';
   import type { Workshop } from '../lib/types';
 
   let rows: Workshop[] = [];
@@ -108,6 +109,7 @@
           <td>{row.site || '—'}</td>
           <td>{row.notes || '—'}</td>
           <td class="ops">
+            <button class="link-btn" on:click={() => goBatches(row.id)}>配方批次</button>
             <button class="link-btn" on:click={() => edit(row)}>编辑</button>
             <button class="link-btn danger" on:click={() => remove(row.id)}>删除</button>
           </td>

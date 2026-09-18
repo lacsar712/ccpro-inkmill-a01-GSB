@@ -1,19 +1,18 @@
 <script lang="ts">
   import { token, user, clearSession } from './lib/auth';
+  import { page, go, type PageId } from './lib/nav';
   import Login from './routes/Login.svelte';
   import Dashboard from './routes/Dashboard.svelte';
   import Workshops from './routes/Workshops.svelte';
   import Mills from './routes/Mills.svelte';
   import ViscositySamples from './routes/ViscositySamples.svelte';
   import GrindPasses from './routes/GrindPasses.svelte';
-
-  type PageId = 'dashboard' | 'workshops' | 'mills' | 'samples' | 'passes';
-
-  let page: PageId = 'dashboard';
+  import InkRecipeBatches from './routes/InkRecipeBatches.svelte';
 
   const nav: { id: PageId; label: string }[] = [
     { id: 'dashboard', label: '仪表盘' },
     { id: 'workshops', label: '车间' },
+    { id: 'batches', label: '配方批次' },
     { id: 'mills', label: '研磨机' },
     { id: 'samples', label: '粘度取样' },
     { id: 'passes', label: '研磨遍次' },
@@ -21,7 +20,7 @@
 
   function logout() {
     clearSession();
-    page = 'dashboard';
+    go('dashboard');
   }
 </script>
 
@@ -39,7 +38,7 @@
       </div>
       <nav>
         {#each nav as item}
-          <button class:active={page === item.id} on:click={() => (page = item.id)}>
+          <button class:active={$page === item.id} on:click={() => go(item.id)}>
             {item.label}
           </button>
         {/each}
@@ -51,13 +50,15 @@
       </div>
     </aside>
     <main class="main">
-      {#if page === 'dashboard'}
+      {#if $page === 'dashboard'}
         <Dashboard />
-      {:else if page === 'workshops'}
+      {:else if $page === 'workshops'}
         <Workshops />
-      {:else if page === 'mills'}
+      {:else if $page === 'batches'}
+        <InkRecipeBatches />
+      {:else if $page === 'mills'}
         <Mills />
-      {:else if page === 'samples'}
+      {:else if $page === 'samples'}
         <ViscositySamples />
       {:else}
         <GrindPasses />
