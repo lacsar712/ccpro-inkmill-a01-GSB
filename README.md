@@ -1,6 +1,6 @@
 # InkMill-01 · 油墨研磨台账
 
-面向印刷油墨研磨车间的**研磨机状态、粘度取样与研磨遍次**台账系统。  
+面向印刷油墨研磨车间的**研磨机状态、粘度取样、研磨遍次与色浆配方批次**台账系统。  
 **不是**库存、电商或 CMS 场景。
 
 ## 技术栈
@@ -34,7 +34,36 @@ MySQL 连接：`inkmill` / `inkmill` / `inkmill`（库名/用户/密码）
 2. **Mill**：`workshopId`, `millCode`（同车间唯一）, `pigmentBase`, `bowlLiters`, `status`（`grinding` \| `idle` \| `wash`）
 3. **ViscositySample**：`millId`, `sampledAt`, `viscosityPaS`（须 &gt; 0，否则 HTTP 400）, `tempC`, `notes`
 4. **GrindPass**：`millId`, `startedAt`, `passNo`（≥ 1）, `durationMin`（&gt; 0）, `mediaType`, `operatorName`
-5. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
+5. **InkRecipeBatch（色浆配方批次）**：`workshopId`（批次挂车间）, `batchCode`（同车间唯一）, `pigmentBase`, `targetViscosityPaS`（目标粘度，须为正数）, `status`, `note`（可空）。新建批次恒为 `draft`，状态不允许通过普通编辑接口修改。
+6. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
+
+### 配方批次状态机
+
+```
+draft ──▶ mixing ──▶ qc_pass   （终态）
+                 └─▶ scrap     （终态）
+```
+
+- `draft` → `mixing`
+- `mixing` → `qc_pass` / `scrap`
+- `qc_pass`、`scrap` 为终态
+- 任何非法跳转（含重复流转、从终态流转）返回 **HTTP 409**，中文报错，如 `非法状态流转：草稿 → 质检合格`
+
+### 配方批次接口（`/api/ink-recipe-batches`，均需 JWT）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/ink-recipe-batches` | 列表，可选查询参数 `workshopId`、`status` |
+| POST | `/api/ink-recipe-batches` | 新建（初始 `draft`）；同车间编号重复 → 400 |
+| GET | `/api/ink-recipe-batches/{id}` | 详情，不存在 → 404 |
+| PUT | `/api/ink-recipe-batches/{id}` | 编辑基础字段（不改动状态） |
+| DELETE | `/api/ink-recipe-batches/{id}` | 删除 |
+| POST | `/api/ink-recipe-batches/{id}/transition` | **独立流转接口**，body：`{ "status": "mixing" \| "qc_pass" \| "scrap", "note"?: string }`；非法跳转 → 409 |
+
+前端侧栏：仪表盘 / 车间 / 研磨机 / **配方批次** / 粘度取样 / 研磨遍次。  
+配方批次页支持按车间与状态筛选、查看详情并执行流转；车间页每行提供「配方批次」入口，跳入时自动带 `workshopId` 筛选。
+
+种子数据中的配方批次覆盖 `draft`、`mixing`、`qc_pass`（另含一个 `scrap`）各至少 1 条。
 
 ## 快速启动（Docker）
 

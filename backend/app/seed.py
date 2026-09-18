@@ -4,6 +4,7 @@ from decimal import Decimal
 from app.auth import hash_password
 from app.database import SessionLocal
 from app.models.grind_pass import GrindPass
+from app.models.ink_recipe_batch import InkRecipeBatch
 from app.models.mill import Mill
 from app.models.user import User
 from app.models.viscosity_sample import ViscositySample
@@ -112,6 +113,60 @@ def seed() -> None:
             print("Seed data inserted.")
         else:
             print("Seed skipped (workshops exist).")
+
+        if db.query(InkRecipeBatch).count() == 0:
+            w1 = db.query(Workshop).filter(Workshop.name == "一号油墨车间").first()
+            w2 = db.query(Workshop).filter(Workshop.name == "调墨中心").first()
+            if w1 is None:
+                w1 = db.query(Workshop).order_by(Workshop.id.asc()).first()
+            if w2 is None:
+                w2 = (
+                    db.query(Workshop)
+                    .filter(Workshop.id != w1.id)
+                    .order_by(Workshop.id.asc())
+                    .first()
+                )
+
+            db.add_all(
+                [
+                    InkRecipeBatch(
+                        workshop_id=w1.id,
+                        batch_code="PB-2026-001",
+                        pigment_base="酞菁蓝 15:3 载体",
+                        target_viscosity_pa_s=Decimal("10.5000"),
+                        status="draft",
+                        note="待排产，先打小样确认色相",
+                    ),
+                    InkRecipeBatch(
+                        workshop_id=w1.id,
+                        batch_code="PB-2026-002",
+                        pigment_base="炭黑 7# 载体",
+                        target_viscosity_pa_s=Decimal("12.0000"),
+                        status="mixing",
+                        note="调墨中，等待二次粘度检测",
+                    ),
+                    InkRecipeBatch(
+                        workshop_id=w1.id,
+                        batch_code="PB-2026-003",
+                        pigment_base="永固紫 RL 载体",
+                        target_viscosity_pa_s=Decimal("9.8000"),
+                        status="qc_pass",
+                        note="质检合格，可转入灌装",
+                    ),
+                    InkRecipeBatch(
+                        workshop_id=(w2 or w1).id,
+                        batch_code="PB-2026-004",
+                        pigment_base="专色大红 48:2 载体",
+                        target_viscosity_pa_s=Decimal("11.2000"),
+                        status="scrap",
+                        note="细度不合格且无法回调，整批报废",
+                    ),
+                ]
+            )
+            db.commit()
+            print("Ink recipe batches inserted.")
+        else:
+            print("Seed skipped (ink recipe batches exist).")
     finally:
         db.close()
 

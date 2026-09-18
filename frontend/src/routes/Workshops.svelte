@@ -1,12 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
+  import { batchFilterPreset, page } from '../lib/nav';
   import type { Workshop } from '../lib/types';
 
   let rows: Workshop[] = [];
   let error = '';
   let form = { name: '', site: '', notes: '' };
   let editingId: number | null = null;
+
+  function viewBatches(workshop: Workshop) {
+    batchFilterPreset.set({ workshopId: workshop.id });
+    page.set('batches');
+  }
 
   async function load() {
     error = '';
@@ -108,6 +114,7 @@
           <td>{row.site || '—'}</td>
           <td>{row.notes || '—'}</td>
           <td class="ops">
+            <button class="link-btn" on:click={() => viewBatches(row)}>配方批次</button>
             <button class="link-btn" on:click={() => edit(row)}>编辑</button>
             <button class="link-btn danger" on:click={() => remove(row.id)}>删除</button>
           </td>

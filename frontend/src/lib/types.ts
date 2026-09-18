@@ -44,6 +44,20 @@ export interface GrindPass {
   operatorName: string;
 }
 
+export type BatchStatus = 'draft' | 'mixing' | 'qc_pass' | 'scrap';
+
+export interface InkRecipeBatch {
+  id: number;
+  workshopId: number;
+  batchCode: string;
+  pigmentBase: string;
+  targetViscosityPaS: number;
+  status: BatchStatus;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DashboardStats {
   workshopTotal: number;
   grindingMillCount: number;
